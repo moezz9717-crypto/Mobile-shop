@@ -1,0 +1,1293 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
+<title>خزنة فودافون كاش</title>
+
+<!-- إعدادات PWA و iOS -->
+<meta name="theme-color" content="#e60000" />
+<link rel="manifest" href="manifest.json" />
+<link rel="apple-touch-icon" href="apple-touch-icon.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="الخزنة" />
+
+<style>
+/* =========================================================
+   متغيّرات الثيم الداكن
+   ========================================================= */
+:root{
+  --red:#ef2b2b;        --red-d:#c81e1e;
+  --green:#1fb866;      --green-d:#15904f;
+  --blue:#3b82f6;
+  --amber:#e0922f;
+  --indigo:#6d5cf0;     --indigo-d:#574bd6;
+  --ink:#eef1f7;        /* النص الأساسي */
+  --muted:#8a93a8;      /* نص ثانوي */
+  --line:#242c3d;       /* الحدود */
+  --bg:#0b0f18;         /* خلفية الصفحة */
+  --bg2:#0f1422;        /* خلفية بديلة */
+  --card:#141a28;       /* البطاقات */
+  --card2:#1a2132;      /* بطاقة أفتح */
+  --shadow:0 4px 18px rgba(0,0,0,.35);
+  --shadow-lg:0 18px 50px rgba(0,0,0,.55);
+  --r:18px;
+  --safe-top:env(safe-area-inset-top);
+  --safe-bottom:env(safe-area-inset-bottom);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html{height:100%;}
+body{
+  margin:0;padding:0;
+  position:fixed; inset:0; overflow:hidden;
+  font-family:system-ui,-apple-system,"Segoe UI",Tahoma,"Helvetica Neue",Arial,sans-serif;
+  background:var(--bg); color:var(--ink);
+  -webkit-font-smoothing:antialiased; line-height:1.5;
+}
+#scroller{
+  position:absolute; inset:0;
+  overflow-y:auto; overflow-x:hidden;
+  -webkit-overflow-scrolling:touch; overscroll-behavior:none;
+  padding-bottom:calc(92px + var(--safe-bottom));
+}
+.num{font-variant-numeric:tabular-nums; letter-spacing:.2px;}
+button{font-family:inherit; cursor:pointer; border:none; touch-action:manipulation;}
+input,textarea{font-family:inherit;}
+
+/* ===== الشريط العلوي ===== */
+.appbar{
+  position:sticky; top:0; z-index:30;
+  background:rgba(11,15,24,.86); backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--line);
+  color:#fff; padding:calc(12px + var(--safe-top)) 16px 12px;
+}
+.appbar-row{display:flex; align-items:center; gap:12px;}
+.brand{display:flex; align-items:center; gap:10px; font-weight:800; font-size:18px;}
+.brand .logo{
+  width:34px;height:34px;border-radius:50%;
+  background:radial-gradient(circle at 30% 30%, #ff3b3b, #e60000);
+  display:grid;place-items:center;color:#fff;font-weight:900;font-size:12px;
+  box-shadow:0 4px 12px rgba(230,0,0,.4);
+}
+.appbar .spacer{flex:1;}
+.icon-btn{
+  width:40px;height:40px;border-radius:12px;background:var(--card2);
+  color:#fff;display:grid;place-items:center;font-size:18px;border:1px solid var(--line);
+}
+.icon-btn:active{transform:scale(.92);}
+.icon-btn.spin{animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.appbar-sub{display:flex; align-items:center; gap:8px; margin-top:10px; font-size:13px; color:var(--muted);}
+.conn{margin-inline-start:auto; font-size:12px; display:inline-flex; align-items:center; gap:6px;}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted);}
+.conn .dot{width:7px;height:7px;}
+
+/* ===== الحاوية والأقسام ===== */
+.wrap{max-width:560px; margin:0 auto; padding:16px;}
+.page{display:none;}
+.page.active{display:block; animation:fade .25s ease;}
+@keyframes fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+.section-title{font-size:13px;font-weight:800;color:var(--muted);margin:14px 2px 10px;}
+
+.card{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);padding:16px;margin-bottom:14px;border:1px solid var(--line);}
+
+/* بطاقة اليوم */
+.shift-card{position:relative; overflow:hidden;}
+.shift-card.open{border:1px solid rgba(31,184,102,.35); background:linear-gradient(180deg,rgba(31,184,102,.10),var(--card));}
+.shift-head{display:flex; align-items:center; gap:10px;}
+.shift-state{font-weight:800; font-size:17px;}
+.badge{font-size:12px;font-weight:800;padding:5px 11px;border-radius:999px; display:inline-flex; align-items:center; gap:6px;}
+.badge.open{background:rgba(31,184,102,.16);color:#39d684;}
+.badge.none{background:var(--card2);color:var(--muted);}
+.badge.closed{background:rgba(59,130,246,.16);color:#7aa8ff;}
+.open-meta{display:flex; gap:10px; margin-top:14px;}
+.meta-item{flex:1;background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:12px;}
+.meta-item .k{font-size:12px;color:var(--muted);}
+.meta-item .v{font-weight:900;font-size:16px;margin-top:3px;}
+
+/* بطاقتا الأرصدة (المحفظة / السيولة) */
+.bal-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
+.bal-card{border-radius:var(--r);padding:15px;border:1px solid var(--line);position:relative;overflow:hidden;}
+.bal-card .bc-top{display:flex;align-items:center;justify-content:space-between;}
+.bal-card .bc-ic{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;font-size:17px;}
+.bal-card .bc-label{font-size:13px;font-weight:800;}
+.bal-card .bc-val{font-size:20px;font-weight:900;margin-top:10px;}
+.bal-card .bc-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+.bal-card.wallet{background:linear-gradient(180deg,rgba(109,92,240,.16),var(--card));}
+.bal-card.wallet .bc-ic{background:rgba(109,92,240,.22);color:#a99bff;}
+.bal-card.wallet .bc-label{color:#a99bff;}
+.bal-card.cash{background:linear-gradient(180deg,rgba(224,146,47,.16),var(--card));}
+.bal-card.cash .bc-ic{background:rgba(224,146,47,.22);color:#f0b46b;}
+.bal-card.cash .bc-label{color:#f0b46b;}
+
+/* أزرار */
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;
+  width:100%;padding:16px;border-radius:15px;font-weight:800;font-size:16px;color:#fff;
+  transition:transform .08s ease, filter .2s;}
+.btn:active{transform:scale(.985);}
+.btn.green{background:linear-gradient(180deg,#23c873,#16a356);box-shadow:0 8px 20px rgba(22,163,86,.28);}
+.btn.red{background:linear-gradient(180deg,#f54141,#d62020);box-shadow:0 8px 20px rgba(214,32,32,.28);}
+.btn.blue{background:linear-gradient(180deg,#4b8bf7,#2f6fe0);box-shadow:0 8px 20px rgba(47,111,224,.25);}
+.btn.indigo{background:linear-gradient(180deg,#7c6cf5,#574bd6);box-shadow:0 8px 20px rgba(87,75,214,.3);}
+.btn.dark{background:var(--card2);border:1px solid var(--line);}
+.btn.ghost{background:var(--card2);color:var(--ink);border:1px solid var(--line);}
+.btn.lg{padding:18px;font-size:17px;}
+.btn:disabled{opacity:.45;filter:grayscale(.4);box-shadow:none;}
+.btn-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+
+/* بطاقات الإحصائيات */
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.stat{background:var(--card);border-radius:var(--r);padding:15px;position:relative;overflow:hidden;border:1px solid var(--line);}
+.stat .accent{display:none;}
+.stat .title{font-size:13px;color:var(--muted);font-weight:800;display:flex;align-items:center;gap:7px;}
+.stat .title::before{content:"";width:9px;height:9px;border-radius:50%;display:inline-block;}
+.stat.red .title::before{background:var(--red);} 
+.stat.green .title::before{background:var(--green);} 
+.stat.blue .title::before{background:var(--blue);}
+.stat.red{background:linear-gradient(180deg,rgba(239,43,43,.10),var(--card));border-color:rgba(239,43,43,.3);}
+.stat.green{background:linear-gradient(180deg,rgba(31,184,102,.10),var(--card));border-color:rgba(31,184,102,.3);}
+.stat.blue{background:linear-gradient(180deg,rgba(59,130,246,.10),var(--card));border-color:rgba(59,130,246,.3);}
+.stat .big{font-size:21px;font-weight:900;margin-top:8px;}
+.stat .sub{font-size:12px;color:var(--muted);margin-top:5px;}
+.stat.wide{grid-column:1 / -1;}
+.stat.blue.wide .big{color:#7aa8ff;}
+
+/* بحث */
+.search{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);
+  border-radius:14px;padding:11px 13px;margin-bottom:12px;}
+.search input{border:none;outline:none;width:100%;font-size:15px;background:transparent;color:var(--ink);}
+.search span{color:var(--muted);}
+
+/* قائمة العمليات */
+.tx{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:15px;
+  padding:12px 14px;margin-bottom:9px;}
+.tx .ic{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;font-size:18px;flex:none;color:#fff;font-weight:900;}
+.tx.dep .ic{background:linear-gradient(180deg,#23c873,#16a356);}
+.tx.wd .ic{background:linear-gradient(180deg,#f54141,#d62020);}
+.tx .mid{flex:1;min-width:0;}
+.tx .t1{font-weight:800;font-size:15px;}
+.tx .t2{font-size:12px;color:var(--muted);margin-top:2px;}
+.tx .amt{text-align:start;font-weight:900;font-size:16px;}
+.tx.dep .amt{color:#39d684;}
+.tx.wd .amt{color:#ff6b6b;}
+.tx .comm{font-size:11px;color:var(--muted);font-weight:700;margin-top:2px;}
+.tx .del{width:36px;height:36px;border-radius:11px;background:rgba(239,43,43,.14);color:#ff6b6b;display:grid;place-items:center;font-size:16px;flex:none;}
+
+.empty{text-align:center;color:var(--muted);padding:34px 16px;}
+.empty .em{font-size:42px;}
+.empty .et{margin-top:10px;font-weight:800;color:var(--ink);}
+.empty .es{font-size:13px;margin-top:4px;}
+
+/* سجل الأرباح / الأيام */
+.ledger-row{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:15px;padding:12px 14px;margin-bottom:9px;}
+.ledger-row .l-ic{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;font-size:18px;flex:none;font-weight:900;color:#fff;}
+.ledger-row.plus .l-ic{background:linear-gradient(180deg,#23c873,#16a356);}
+.ledger-row.minus .l-ic{background:linear-gradient(180deg,#e0922f,#c2761c);}
+.ledger-row .l-mid{flex:1;}
+.ledger-row .l-t1{font-weight:800;font-size:14px;}
+.ledger-row .l-t2{font-size:12px;color:var(--muted);}
+.ledger-row .l-amt{font-weight:900;}
+.ledger-row.plus .l-amt{color:#39d684;}
+.ledger-row.minus .l-amt{color:#f0b46b;}
+.ledger-row .l-bal{font-size:11px;color:var(--muted);text-align:start;}
+
+.shift-row{background:var(--card);border:1px solid var(--line);border-radius:15px;margin-bottom:10px;overflow:hidden;}
+.shift-row .sr-head{display:flex;align-items:center;gap:12px;padding:14px;}
+.shift-row .sr-date{font-weight:800;}
+.shift-row .sr-sub{font-size:12px;color:var(--muted);margin-top:2px;}
+.shift-row .sr-res{margin-inline-start:auto;text-align:start;}
+.res-chip{font-size:12px;font-weight:800;padding:5px 10px;border-radius:999px;display:inline-block;}
+.res-chip.ok{background:rgba(31,184,102,.16);color:#39d684;}
+.res-chip.up{background:rgba(224,146,47,.16);color:#f0b46b;}
+.res-chip.down{background:rgba(239,43,43,.16);color:#ff6b6b;}
+.sr-detail{border-top:1px dashed var(--line);padding:14px;display:none;background:var(--bg2);}
+.sr-detail.show{display:block;}
+.kv{display:flex;justify-content:space-between;padding:7px 0;font-size:14px;border-bottom:1px dashed var(--line);}
+.kv:last-child{border-bottom:none;}
+.kv .kk{color:var(--muted);}
+.kv .vv{font-weight:800;}
+.chev{transition:transform .2s;color:var(--muted);}
+.chev.up{transform:rotate(180deg);}
+
+/* شريط التنقل السفلي */
+.tabbar{
+  position:fixed;left:0;right:0;bottom:0;z-index:40;
+  background:rgba(13,17,28,.95);backdrop-filter:blur(14px);
+  border-top:1px solid var(--line);
+  display:flex;justify-content:space-around;
+  padding:9px 6px calc(9px + var(--safe-bottom));
+}
+.tab{display:flex;flex-direction:column;align-items:center;gap:4px;background:none;color:var(--muted);
+  font-size:11px;font-weight:700;padding:5px 12px;border-radius:12px;min-width:60px;}
+.tab .ti{font-size:21px;line-height:1;filter:grayscale(.4);opacity:.7;}
+.tab.active{color:var(--red);}
+.tab.active .ti{filter:none;opacity:1;transform:translateY(-1px);}
+
+/* نوافذ منبثقة */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:50;
+  display:none;align-items:flex-end;justify-content:center;}
+.overlay.show{display:flex;animation:ovin .2s ease;}
+@keyframes ovin{from{opacity:0;}to{opacity:1;}}
+.sheet{width:100%;max-width:560px;background:var(--card);border-top:1px solid var(--line);
+  border-radius:24px 24px 0 0;padding:18px 18px calc(20px + var(--safe-bottom));
+  box-shadow:var(--shadow-lg);transform:translateY(100%);animation:up .28s cubic-bezier(.2,.8,.2,1) forwards;
+  max-height:92vh;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;}
+@keyframes up{to{transform:translateY(0);}}
+.sheet .grab{width:42px;height:5px;border-radius:3px;background:#333d52;margin:0 auto 14px;}
+.sheet h3{margin:0 0 4px;font-size:19px;font-weight:900;}
+.sheet .sub{color:var(--muted);font-size:13px;margin-bottom:16px;}
+
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:13px;font-weight:800;margin-bottom:8px;color:var(--ink);}
+.field .inp{display:flex;align-items:center;gap:8px;border:1.5px solid var(--line);border-radius:14px;
+  padding:14px;background:var(--bg2);transition:border-color .15s;}
+.field .inp:focus-within{border-color:var(--blue);}
+.field .inp input{border:none;outline:none;background:transparent;width:100%;font-size:18px;font-weight:800;color:var(--ink);}
+.field .inp .unit{color:var(--muted);font-size:13px;font-weight:800;flex:none;}
+.field .hint{font-size:12px;color:var(--muted);margin-top:6px;}
+.field textarea{width:100%;border:1.5px solid var(--line);border-radius:14px;padding:12px 14px;
+  font-size:15px;background:var(--bg2);outline:none;resize:none;color:var(--ink);}
+.field textarea:focus{border-color:var(--blue);}
+
+.result-box{border-radius:16px;padding:16px;margin:6px 0 14px;border:1px solid var(--line);}
+.result-box.ok{background:rgba(31,184,102,.12);border-color:rgba(31,184,102,.4);}
+.result-box.up{background:rgba(224,146,47,.12);border-color:rgba(224,146,47,.4);}
+.result-box.down{background:rgba(239,43,43,.12);border-color:rgba(239,43,43,.4);}
+.result-box .rt{font-size:15px;font-weight:900;}
+.result-box.ok .rt{color:#39d684;}
+.result-box.up .rt{color:#f0b46b;}
+.result-box.down .rt{color:#ff6b6b;}
+.result-box .rv{font-size:26px;font-weight:900;margin-top:4px;}
+
+.calc{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:6px 14px;margin-bottom:14px;}
+.banner{background:rgba(224,146,47,.12);border:1px solid rgba(224,146,47,.4);color:#f0b46b;border-radius:12px;
+  padding:10px 14px;font-size:13px;font-weight:700;margin-bottom:14px;display:flex;gap:8px;align-items:center;}
+
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(100px + var(--safe-bottom));
+  background:#1d2433;border:1px solid var(--line);color:#fff;padding:12px 18px;border-radius:13px;font-weight:700;font-size:14px;
+  z-index:80;box-shadow:var(--shadow-lg);opacity:0;pointer-events:none;transition:opacity .25s, transform .25s;max-width:90%;text-align:center;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(-4px);}
+.toast.green{background:#15904f;border-color:#1fb866;}
+.toast.red{background:#c81e1e;border-color:#ef2b2b;}
+
+.update-bar{position:fixed;left:0;right:0;bottom:calc(80px + var(--safe-bottom));z-index:70;
+  display:none;justify-content:center;padding:0 12px;}
+.update-bar.show{display:flex;}
+.update-bar .inner{background:#1d2433;border:1px solid var(--line);color:#fff;border-radius:14px;padding:11px 16px;
+  display:flex;align-items:center;gap:12px;box-shadow:var(--shadow-lg);max-width:520px;width:100%;}
+.update-bar .inner span{flex:1;font-size:14px;font-weight:700;}
+.update-bar .inner button{background:var(--green);color:#fff;padding:8px 14px;border-radius:10px;font-weight:800;}
+
+/* شاشة القفل */
+.lock{position:fixed;inset:0;z-index:200;background:radial-gradient(120% 80% at 50% 0%, #1a1020, #0b0f18 60%);
+  display:none;flex-direction:column;align-items:center;justify-content:center;
+  color:#fff;padding:calc(40px + var(--safe-top)) 24px calc(24px + var(--safe-bottom));}
+.lock.show{display:flex;}
+.lock .l-logo{width:66px;height:66px;border-radius:20px;background:radial-gradient(circle at 30% 30%, #ff3b3b, #e60000);color:#fff;
+  display:grid;place-items:center;font-weight:900;font-size:22px;margin-bottom:16px;box-shadow:0 10px 30px rgba(230,0,0,.45);}
+.lock h2{margin:0;font-size:20px;font-weight:900;}
+.lock .l-sub{color:var(--muted);font-size:14px;margin:6px 0 26px;}
+.dots{display:flex;gap:14px;margin-bottom:30px;height:16px;}
+.dots .d{width:14px;height:14px;border-radius:50%;background:#2b3447;transition:background .15s, transform .15s;}
+.dots .d.on{background:var(--red);transform:scale(1.1);}
+.dots.err{animation:shake .4s;}
+@keyframes shake{0%,100%{transform:translateX(0);}20%,60%{transform:translateX(-9px);}40%,80%{transform:translateX(9px);}}
+.keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;width:100%;max-width:300px;}
+.key{aspect-ratio:1;border-radius:50%;background:var(--card2);border:1px solid var(--line);color:#fff;
+  font-size:26px;font-weight:700;display:grid;place-items:center;transition:transform .08s, background .15s;}
+.key:active{transform:scale(.92);background:#222b3d;}
+.key.blank{background:none;border:none;pointer-events:none;}
+.key.act{font-size:20px;}
+
+@media (prefers-reduced-motion: reduce){ *{animation:none !important; transition:none !important;} }
+
+</style>
+</head>
+<body>
+
+<!-- ===== شاشة القفل بالرقم السري ===== -->
+<div class="lock" id="lockScreen">
+  <div class="l-logo">VF</div>
+  <h2>خزنة فودافون كاش</h2>
+  <div class="l-sub" id="lockSub">أدخل الرقم السري</div>
+  <div class="dots" id="lockDots"></div>
+  <div class="keypad" id="keypad"></div>
+</div>
+
+<!-- ===== حاوية التمرير الوحيدة (تمنع تمرّط الصفحة في iOS) ===== -->
+<div id="scroller">
+
+<!-- ===== الشريط العلوي ===== -->
+<div class="appbar">
+  <div class="appbar-row">
+    <div class="brand">
+      <div class="logo">VF</div>
+      <span>خزنة فودافون كاش</span>
+    </div>
+    <div class="spacer"></div>
+    <button class="icon-btn" id="btnRefresh" aria-label="تحديث">🔄</button>
+    <button class="icon-btn" id="btnSettings" aria-label="الإعدادات">⚙️</button>
+  </div>
+  <div class="appbar-sub">
+    <span id="todayDate">—</span>
+    <span class="conn" id="connStatus"><span class="dot"></span> محلي</span>
+  </div>
+</div>
+
+<!-- ===== منطقة التمرير (المحتوى) ===== -->
+<div id="scroll">
+
+<!-- ===== الصفحات ===== -->
+<div class="wrap">
+
+  <!-- ====== الرئيسية ====== -->
+  <div class="page active" id="page-home">
+
+    <!-- بطاقة اليوم -->
+    <div id="shiftBox"></div>
+
+    <!-- ملخص الإحصائيات -->
+    <div id="statsBox"></div>
+
+    <!-- أزرار العمليات -->
+    <div class="btn-row" style="margin:6px 0 16px">
+      <button class="btn red lg" id="btnWithdraw">⬆️ سحب</button>
+      <button class="btn green lg" id="btnDeposit">⬇️ إيداع</button>
+    </div>
+
+    <!-- سجل عمليات اليوم -->
+    <div class="section-title">سجل عمليات اليوم</div>
+    <div class="search">
+      <span>🔍</span>
+      <input type="text" id="txSearch" placeholder="ابحث في العمليات (مبلغ، نوع، وقت)…" />
+    </div>
+    <div id="txList"></div>
+  </div>
+
+  <!-- ====== الأرباح ====== -->
+  <div class="page" id="page-profit">
+    <div id="profitSummary"></div>
+    <button class="btn blue" id="btnWithdrawProfit" style="margin-bottom:16px">💸 سحب أرباح</button>
+    <div class="section-title">سجل الأرباح</div>
+    <div id="profitLedger"></div>
+  </div>
+
+  <!-- ====== الأيام ====== -->
+  <div class="page" id="page-shifts">
+    <div class="section-title">سجل الأيام السابقة</div>
+    <div id="shiftsList"></div>
+  </div>
+
+</div>
+<!-- نهاية منطقة المحتوى -->
+</div>
+<!-- نهاية حاوية التمرير -->
+
+<!-- ===== شريط التنقل السفلي ===== -->
+<div class="tabbar">
+  <button class="tab active" data-tab="home"><span class="ti">🏠</span>الرئيسية</button>
+  <button class="tab" data-tab="profit"><span class="ti">💰</span>الأرباح</button>
+  <button class="tab" data-tab="shifts"><span class="ti">📋</span>الأيام</button>
+</div>
+
+<!-- ===== حاوية النوافذ ===== -->
+<div class="overlay" id="overlay"><div class="sheet" id="sheet"></div></div>
+
+<!-- ===== التنبيه ===== -->
+<div class="toast" id="toast"></div>
+
+<!-- ===== شريط التحديث ===== -->
+<div class="update-bar" id="updateBar">
+  <div class="inner">
+    <span>يتوفر تحديث جديد للتطبيق</span>
+    <button id="btnUpdate">تحديث الآن</button>
+  </div>
+</div>
+
+<!-- مكتبة Supabase الرسمية (CDN) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+/* =========================================================================
+   1) إعدادات الاتصال بـ Supabase  ← عدّل القيمتين هنا فقط
+   ========================================================================= */
+const SUPABASE_URL      = "https://xfhpmjetkvagctaqskjh.supabase.co";   // رابط مشروعك
+const SUPABASE_ANON_KEY = "sb_publishable_Efg2rZaaF_SQ96RHtpc6yA_fUUISzCR";   // مفتاح المشروع
+
+// الرقم السري لفتح التطبيق (غيّره زي ما تحب — أي عدد أرقام)
+const APP_PIN = "6699";
+
+// نِسَب العمولة (قابلة للتعديل)
+const WITHDRAW_RATE = 0.015;    // عمولة السحب 1.5%
+const DEPOSIT_RATE  = 0.01;     // عمولة الإيداع 1%
+
+/* =========================================================================
+   2) أدوات مساعدة
+   ========================================================================= */
+const $  = (s, el=document) => el.querySelector(s);
+const $$ = (s, el=document) => [...el.querySelectorAll(s)];
+
+// مُعرّف فريد لكل سجل (يُستخدم محليًا وفي السحابة)
+function uid(){ return 'id_' + Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+
+// تنسيق المبالغ بالجنيه المصري بمنزلتين عشريتين
+function money(n){
+  const v = Number(n)||0;
+  return v.toLocaleString('en-US',{minimumFractionDigits:2, maximumFractionDigits:2}) + ' ج.م';
+}
+// تقريب لمنزلتين
+function round2(n){ return Math.round((Number(n)+Number.EPSILON)*100)/100; }
+
+// التاريخ والوقت بالعربية
+function fmtDate(iso){
+  try{ return new Date(iso).toLocaleDateString('ar-EG',{weekday:'long', day:'numeric', month:'long', year:'numeric'}); }
+  catch(e){ return iso; }
+}
+function fmtDateShort(iso){
+  try{ return new Date(iso).toLocaleDateString('ar-EG',{day:'numeric', month:'short', year:'numeric'}); }
+  catch(e){ return iso; }
+}
+function fmtTime(iso){
+  try{ return new Date(iso).toLocaleTimeString('ar-EG',{hour:'2-digit', minute:'2-digit'}); }
+  catch(e){ return ''; }
+}
+
+/* =========================================================================
+   3) الحالة والتخزين المحلي (LocalStorage كنسخة احتياطية)
+   ========================================================================= */
+const LS_DB    = 'vfcash_db';
+const LS_QUEUE = 'vfcash_queue';
+
+// شكل البيانات: مصفوفات متطابقة مع جداول Supabase
+let DB = { shifts:[], transactions:[], profit_withdrawals:[], differences:[] };
+
+function loadLocal(){
+  try{
+    const raw = localStorage.getItem(LS_DB);
+    if(raw){ DB = Object.assign({shifts:[],transactions:[],profit_withdrawals:[],differences:[]}, JSON.parse(raw)); }
+  }catch(e){ console.warn('فشل تحميل البيانات المحلية', e); }
+}
+function saveLocal(){
+  try{ localStorage.setItem(LS_DB, JSON.stringify(DB)); }
+  catch(e){ console.warn('فشل حفظ البيانات المحلية', e); }
+}
+
+/* =========================================================================
+   4) طبقة Supabase + قائمة المزامنة (تعمل دون اتصال وتزامن عند العودة)
+   ========================================================================= */
+let supa = null;            // عميل Supabase
+let cloudReady = false;     // هل الإعدادات موجودة؟
+let lastCloudError = '';    // آخر رسالة خطأ من السحابة (للتشخيص)
+
+function initSupabase(){
+  if(SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase){
+    try{
+      supa = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      cloudReady = true;
+    }catch(e){ console.warn('تعذّر تهيئة Supabase', e); cloudReady=false; }
+  }
+}
+
+// قائمة العمليات المؤجلة عند انقطاع الاتصال
+function getQueue(){ try{ return JSON.parse(localStorage.getItem(LS_QUEUE)||'[]'); }catch(e){ return []; } }
+function setQueue(q){ localStorage.setItem(LS_QUEUE, JSON.stringify(q)); }
+function enqueue(op){ const q=getQueue(); q.push(op); setQueue(q); }
+
+// رفع (إضافة/تعديل) سجل للسحابة، وإلا تأجيله
+async function cloudUpsert(table, row){
+  if(!cloudReady || !navigator.onLine){ enqueue({op:'upsert',table,row}); return; }
+  try{
+    const { error } = await supa.from(table).upsert(row);
+    if(error) throw error;
+  }catch(e){ lastCloudError = (e&&e.message)?e.message:String(e); enqueue({op:'upsert',table,row}); updateConn('offline'); }
+}
+// حذف سجل من السحابة، وإلا تأجيله
+async function cloudDelete(table, id){
+  if(!cloudReady || !navigator.onLine){ enqueue({op:'delete',table,id}); return; }
+  try{
+    const { error } = await supa.from(table).delete().eq('id', id);
+    if(error) throw error;
+  }catch(e){ lastCloudError = (e&&e.message)?e.message:String(e); enqueue({op:'delete',table,id}); updateConn('offline'); }
+}
+
+// تفريغ قائمة المزامنة عند عودة الاتصال
+async function flushQueue(){
+  if(!cloudReady || !navigator.onLine) return;
+  let q = getQueue();
+  if(!q.length) return;
+  const rest = [];
+  for(const op of q){
+    try{
+      if(op.op==='upsert'){ const {error}=await supa.from(op.table).upsert(op.row); if(error) throw error; }
+      else if(op.op==='delete'){ const {error}=await supa.from(op.table).delete().eq('id',op.id); if(error) throw error; }
+    }catch(e){ rest.push(op); }
+  }
+  setQueue(rest);
+}
+
+// سحب كل البيانات من السحابة (السحابة هي المصدر عند فتح التطبيق)
+async function cloudPull(){
+  if(!cloudReady || !navigator.onLine) return false;
+  try{
+    const tables = ['shifts','transactions','profit_withdrawals','differences'];
+    const out = {};
+    for(const t of tables){
+      const { data, error } = await supa.from(t).select('*');
+      if(error) throw error;
+      out[t] = data || [];
+    }
+    DB = out; saveLocal();
+    return true;
+  }catch(e){ console.warn('تعذّر سحب البيانات من السحابة', e); return false; }
+}
+
+// مزامنة كاملة: تفريغ المؤجل ثم سحب أحدث نسخة
+async function fullSync(){
+  if(!cloudReady){ updateConn('local'); return; }
+  if(!navigator.onLine){ updateConn('offline'); return; }
+  updateConn('syncing');
+  await flushQueue();
+  await cloudPull();
+  renderAll();
+  updateConn('online');
+}
+
+// اختبار فعلي للقراءة والكتابة لإظهار سبب المشكلة بالضبط
+async function diagnoseCloud(){
+  const out = $('#diagResult');
+  if(!cloudReady){ out.innerHTML = `<div class="banner">⚠️ لم تُضبط بيانات Supabase في الكود.</div>`; return; }
+  if(!navigator.onLine){ out.innerHTML = `<div class="banner">⚠️ لا يوجد اتصال بالإنترنت حاليًا.</div>`; return; }
+  out.innerHTML = `<div class="sub">جارٍ اختبار الاتصال…</div>`;
+  const show = (cls,title,detail)=>{ out.innerHTML = `<div class="result-box ${cls}"><div class="rt">${title}</div>${detail?`<div style="font-size:12px;margin-top:6px;direction:ltr;text-align:left;word-break:break-word">${detail}</div>`:''}</div>`; };
+  const em = (x)=> x ? ((x.message||'') + (x.code?(' ['+x.code+']'):'') + (x.hint?(' — '+x.hint):'')) : 'خطأ غير معروف';
+  try{
+    // 1) اختبار القراءة (وجود الجدول والصلاحيات)
+    const r = await supa.from('shifts').select('id').limit(1);
+    if(r.error) return show('down','فشل القراءة من جدول shifts', em(r.error));
+    // 2) اختبار الكتابة (صلاحية الإدخال)
+    const testId = 'diag_'+Date.now();
+    const w = await supa.from('shifts').insert({ id:testId, status:'diag', created_at:new Date().toISOString() });
+    if(w.error) return show('down','فشل الكتابة في جدول shifts', em(w.error));
+    // تنظيف السجل التجريبي
+    await supa.from('shifts').delete().eq('id', testId);
+    lastCloudError='';
+    updateConn('online');
+    show('ok','الاتصال يعمل بنجاح ✅ — القراءة والكتابة تمام', '');
+  }catch(e){
+    show('down','فشل الاتصال', em(e));
+  }
+}
+
+/* =========================================================================
+   5) الحسابات (Computed)
+   ========================================================================= */
+function currentShift(){ return DB.shifts.find(s => s.status==='open') || null; }
+
+function shiftTx(shiftId){
+  return DB.transactions.filter(t => t.shift_id===shiftId);
+}
+// إحصائيات يوم معيّنة
+function shiftStats(shiftId){
+  const tx = shiftTx(shiftId);
+  const wd = tx.filter(t=>t.type==='withdraw');
+  const dp = tx.filter(t=>t.type==='deposit');
+  const sum = a => a.reduce((s,t)=>s+(Number(t.amount)||0),0);
+  const comm= a => a.reduce((s,t)=>s+(Number(t.commission)||0),0);
+  return {
+    wdCount:wd.length, wdSum:sum(wd), wdComm:comm(wd),
+    dpCount:dp.length, dpSum:sum(dp), dpComm:comm(dp),
+    totalComm: comm(wd)+comm(dp)
+  };
+}
+// الأرباح المتراكمة = مجموع أرباح الأيام المغلقة − مجموع المسحوبات
+function accumulatedProfit(){
+  const earned = DB.shifts.filter(s=>s.status==='closed').reduce((s,sh)=>s+(Number(sh.day_profit)||0),0);
+  const drawn  = DB.profit_withdrawals.reduce((s,p)=>s+(Number(p.amount)||0),0);
+  return round2(earned - drawn);
+}
+
+/* =========================================================================
+   6) العرض (Render)
+   ========================================================================= */
+function renderAll(){
+  renderHeader();
+  renderShiftBox();
+  renderStats();
+  renderTxList();
+  renderProfit();
+  renderShifts();
+  // تفعيل/تعطيل أزرار العمليات
+  const open = !!currentShift();
+  $('#btnWithdraw').disabled = !open;
+  $('#btnDeposit').disabled  = !open;
+}
+
+function renderHeader(){
+  $('#todayDate').textContent = new Date().toLocaleDateString('ar-EG',{weekday:'long', day:'numeric', month:'long'});
+}
+
+function renderShiftBox(){
+  const box = $('#shiftBox');
+  const sh = currentShift();
+  if(!sh){
+    box.innerHTML = `
+      <div class="card shift-card">
+        <div class="shift-head">
+          <span class="shift-state">حالة اليوم</span>
+          <span class="badge none">لا يوجد يوم مفتوح</span>
+        </div>
+        <p style="color:var(--muted);margin:8px 0 14px;font-size:14px">
+          افتح يوم جديد لتسجيل عمليات السحب والإيداع وحساب العمولات.
+        </p>
+        <button class="btn green lg" id="btnOpenShift">🔓 فتح يوم</button>
+      </div>`;
+    $('#btnOpenShift').onclick = openShiftSheet;
+  } else {
+    box.innerHTML = `
+      <div class="card shift-card open">
+        <div class="shift-head">
+          <span class="shift-state">اليوم الحالي</span>
+          <span class="badge open">● يوم مفتوح</span>
+        </div>
+        <div class="open-meta">
+          <div class="meta-item"><div class="k">وقت الفتح</div><div class="v num">${fmtTime(sh.opened_at)}</div></div>
+          <div class="meta-item"><div class="k">تاريخ اليوم</div><div class="v num">${fmtDateShort(sh.opened_at)}</div></div>
+        </div>
+        <button class="btn indigo lg" id="btnCloseShift" style="margin-top:14px">🔒 قفل اليوم</button>
+      </div>
+
+      <div class="section-title">الأرصدة الافتتاحية</div>
+      <div class="bal-grid">
+        <div class="bal-card wallet">
+          <div class="bc-top"><span class="bc-label">المحفظة</span><span class="bc-ic">👛</span></div>
+          <div class="bc-val num">${money(sh.wallet_open)}</div>
+          <div class="bc-sub">رصيد أول اليوم</div>
+        </div>
+        <div class="bal-card cash">
+          <div class="bc-top"><span class="bc-label">السيولة</span><span class="bc-ic">💵</span></div>
+          <div class="bc-val num">${money(sh.drawer_open)}</div>
+          <div class="bc-sub">رصيد أول اليوم</div>
+        </div>
+      </div>`;
+    $('#btnCloseShift').onclick = closeShiftSheet;
+  }
+}
+
+function renderStats(){
+  const sh = currentShift();
+  const box = $('#statsBox');
+  if(!sh){ box.innerHTML=''; return; }
+  const st = shiftStats(sh.id);
+  box.innerHTML = `
+    <div class="stats-grid">
+      <div class="stat red">
+        <div class="accent"></div>
+        <div class="title">⬆️ السحب</div>
+        <div class="big num">${money(st.wdSum)}</div>
+        <div class="sub num">${st.wdCount} عملية · عمولة ${money(st.wdComm)}</div>
+      </div>
+      <div class="stat green">
+        <div class="accent"></div>
+        <div class="title">⬇️ الإيداع</div>
+        <div class="big num">${money(st.dpSum)}</div>
+        <div class="sub num">${st.dpCount} عملية · عمولة ${money(st.dpComm)}</div>
+      </div>
+      <div class="stat blue wide">
+        <div class="accent"></div>
+        <div class="title">📊 إجمالي العمولات (ربح اليوم)</div>
+        <div class="big num">${money(st.totalComm)}</div>
+      </div>
+    </div>`;
+}
+
+function renderTxList(){
+  const sh = currentShift();
+  const list = $('#txList');
+  const q = ($('#txSearch').value||'').trim();
+  if(!sh){
+    list.innerHTML = `<div class="empty"><div class="em">🧾</div><div class="et">لا توجد عمليات</div><div class="es">افتح يوم لبدء تسجيل العمليات.</div></div>`;
+    return;
+  }
+  let tx = shiftTx(sh.id).slice().sort((a,b)=> new Date(b.created_at)-new Date(a.created_at));
+  if(q){
+    tx = tx.filter(t=>{
+      const label = t.type==='withdraw' ? 'سحب' : 'إيداع';
+      return label.includes(q)
+          || String(t.amount).includes(q)
+          || String(t.commission).includes(q)
+          || fmtTime(t.created_at).includes(q);
+    });
+  }
+  if(!tx.length){
+    list.innerHTML = `<div class="empty"><div class="em">🔎</div><div class="et">لا توجد نتائج</div><div class="es">جرّب كلمة بحث أخرى أو سجّل عملية جديدة.</div></div>`;
+    return;
+  }
+  list.innerHTML = tx.map(t=>{
+    const dep = t.type==='deposit';
+    return `<div class="tx ${dep?'dep':'wd'}">
+      <div class="ic">${dep?'⬇️':'⬆️'}</div>
+      <div class="mid">
+        <div class="t1">${dep?'إيداع':'سحب'}</div>
+        <div class="t2 num">${fmtTime(t.created_at)} · ${fmtDateShort(t.created_at)}</div>
+      </div>
+      <div>
+        <div class="amt num">${money(t.amount)}</div>
+        <div class="comm num">عمولة ${money(t.commission)}</div>
+      </div>
+      <button class="del" data-del="${t.id}">🗑</button>
+    </div>`;
+  }).join('');
+  $$('[data-del]', list).forEach(b=> b.onclick = ()=> confirmDeleteTx(b.dataset.del));
+}
+
+function renderProfit(){
+  const acc = accumulatedProfit();
+  const todayShift = DB.shifts.filter(s=>s.status==='closed')
+      .sort((a,b)=> new Date(b.closed_at)-new Date(a.closed_at))[0];
+  const todayProfit = todayShift ? (Number(todayShift.day_profit)||0) : 0;
+
+  $('#profitSummary').innerHTML = `
+    <div class="stats-grid">
+      <div class="stat green">
+        <div class="accent"></div>
+        <div class="title">ربح آخر يوم</div>
+        <div class="big num">${money(todayProfit)}</div>
+      </div>
+      <div class="stat blue">
+        <div class="accent"></div>
+        <div class="title">الأرباح المتراكمة</div>
+        <div class="big num">${money(acc)}</div>
+      </div>
+    </div>`;
+
+  // سجل الأرباح: أرباح الأيام (+) ومسحوبات الأرباح (−) مرتّبة زمنيًا مع رصيد متبقٍ
+  const events = [];
+  DB.shifts.filter(s=>s.status==='closed').forEach(s=>{
+    events.push({ when:s.closed_at, kind:'profit', amount:Number(s.day_profit)||0, note:'ربح يوم' });
+  });
+  DB.profit_withdrawals.forEach(p=>{
+    events.push({ when:p.created_at, kind:'draw', amount:Number(p.amount)||0, note:p.note||'سحب أرباح', id:p.id });
+  });
+  events.sort((a,b)=> new Date(a.when)-new Date(b.when));
+  let bal=0;
+  const rows = events.map(e=>{
+    if(e.kind==='profit') bal+=e.amount; else bal-=e.amount;
+    return {...e, bal};
+  }).reverse(); // الأحدث أولًا
+
+  const ledger = $('#profitLedger');
+  if(!rows.length){
+    ledger.innerHTML = `<div class="empty"><div class="em">💰</div><div class="et">لا توجد أرباح بعد</div><div class="es">تظهر الأرباح هنا بعد إغلاق أول يوم.</div></div>`;
+    return;
+  }
+  ledger.innerHTML = rows.map(e=>{
+    const plus = e.kind==='profit';
+    return `<div class="ledger-row ${plus?'plus':'minus'}">
+      <div class="l-ic">${plus?'+':'−'}</div>
+      <div class="l-mid">
+        <div class="l-t1">${plus?'ربح يوم':'سحب أرباح'}</div>
+        <div class="l-t2 num">${fmtDateShort(e.when)} · ${fmtTime(e.when)}${e.note&&!plus?(' · '+e.note):''}</div>
+      </div>
+      <div>
+        <div class="l-amt num">${plus?'+':'−'} ${money(e.amount)}</div>
+        <div class="l-bal num">المتبقي: ${money(e.bal)}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderShifts(){
+  const list = $('#shiftsList');
+  const shifts = DB.shifts.slice().sort((a,b)=> new Date(b.opened_at)-new Date(a.opened_at));
+  if(!shifts.length){
+    list.innerHTML = `<div class="empty"><div class="em">📋</div><div class="et">لا توجد أيام</div><div class="es">تظهر الأيام هنا بعد فتحها.</div></div>`;
+    return;
+  }
+  list.innerHTML = shifts.map(sh=>{
+    const st = shiftStats(sh.id);
+    let chip='', chipTxt='';
+    if(sh.status==='open'){ chip='up'; chipTxt='مفتوحة'; }
+    else {
+      const d = Number(sh.closing_result)||0;
+      if(d===0){ chip='ok'; chipTxt='مضبوطة'; }
+      else if(d>0){ chip='up'; chipTxt='زيادة '+money(d); }
+      else { chip='down'; chipTxt='عجز '+money(Math.abs(d)); }
+    }
+    return `<div class="shift-row">
+      <div class="sr-head" data-toggle="${sh.id}">
+        <div>
+          <div class="sr-date">${fmtDateShort(sh.opened_at)}</div>
+          <div class="sr-sub num">${fmtTime(sh.opened_at)}${sh.closed_at?(' ← '+fmtTime(sh.closed_at)):''}</div>
+        </div>
+        <div class="sr-res">
+          <span class="res-chip ${chip}">${chipTxt}</span>
+        </div>
+        <span class="chev" id="chev-${sh.id}">▾</span>
+      </div>
+      <div class="sr-detail" id="det-${sh.id}">
+        <div class="kv"><span class="kk">افتتاح المحفظة</span><span class="vv num">${money(sh.wallet_open)}</span></div>
+        <div class="kv"><span class="kk">افتتاح السيولة</span><span class="vv num">${money(sh.drawer_open)}</span></div>
+        ${sh.status==='closed'?`
+        <div class="kv"><span class="kk">إقفال المحفظة</span><span class="vv num">${money(sh.wallet_actual)}</span></div>
+        <div class="kv"><span class="kk">إقفال السيولة</span><span class="vv num">${money(sh.drawer_actual)}</span></div>`:''}
+        <div class="kv"><span class="kk">إجمالي السحب</span><span class="vv num">${money(st.wdSum)} (${st.wdCount})</span></div>
+        <div class="kv"><span class="kk">إجمالي الإيداع</span><span class="vv num">${money(st.dpSum)} (${st.dpCount})</span></div>
+        <div class="kv"><span class="kk">إجمالي العمولات</span><span class="vv num">${money(st.totalComm)}</span></div>
+        ${sh.status==='closed'?`
+        <div class="kv"><span class="kk">نتيجة التقفيل</span><span class="vv num">${chipTxt}</span></div>
+        <div class="kv"><span class="kk">ربح اليوم</span><span class="vv num">${money(sh.day_profit)}</span></div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+  $$('[data-toggle]', list).forEach(h=> h.onclick = ()=>{
+    const id=h.dataset.toggle;
+    $('#det-'+id).classList.toggle('show');
+    $('#chev-'+id).classList.toggle('up');
+  });
+}
+
+/* =========================================================================
+   7) النوافذ المنبثقة
+   ========================================================================= */
+function openSheet(html){
+  $('#sheet').innerHTML = `<div class="grab"></div>` + html;
+  $('#overlay').classList.add('show');
+}
+function closeSheet(){ $('#overlay').classList.remove('show'); }
+// إغلاق النافذة عند الضغط على الخلفية
+$('#overlay').addEventListener('click', e=>{ if(e.target.id==='overlay') closeSheet(); });
+
+// تحويل الأرقام العربية/الفارسية إلى إنجليزية مع السماح بالأرقام والنقطة فقط
+function toLatinNum(s){
+  if(!s) return s;
+  const map={'٠':'0','١':'1','٢':'2','٣':'3','٤':'4','٥':'5','٦':'6','٧':'7','٨':'8','٩':'9',
+             '۰':'0','۱':'1','۲':'2','۳':'3','۴':'4','۵':'5','۶':'6','۷':'7','۸':'8','۹':'9',
+             '٫':'.','،':'','٬':''};
+  let out = s.replace(/[٠-٩۰-۹٫،٬]/g, ch => (ch in map ? map[ch] : ch));
+  out = out.replace(/[^0-9.]/g, '');                 // أرقام ونقطة فقط
+  const parts = out.split('.');
+  if(parts.length > 2) out = parts[0] + '.' + parts.slice(1).join(''); // نقطة واحدة فقط
+  return out;
+}
+
+// قراءة رقم من حقل مع التحقق (يمنع السالب)
+function readNum(id){
+  const v = parseFloat(toLatinNum($('#'+id).value));
+  if(isNaN(v) || v < 0) return null;
+  return round2(v);
+}
+
+/* ---- نافذة فتح يوم ---- */
+function openShiftSheet(){
+  if(currentShift()){ toast('يوجد يوم مفتوح بالفعل','red'); return; }
+  openSheet(`
+    <h3>فتح يوم جديد</h3>
+    <div class="sub">سجّل الأرصدة الافتتاحية في بداية اليوم.</div>
+    <div class="field">
+      <label>رصيد المحفظة أول اليوم</label>
+      <div class="inp"><input id="f_wallet" type="text" inputmode="decimal" placeholder="0.00" /><span class="unit">ج.م</span></div>
+    </div>
+    <div class="field">
+      <label>رصيد السيولة أول اليوم</label>
+      <div class="inp"><input id="f_drawer" type="text" inputmode="decimal" placeholder="0.00" /><span class="unit">ج.م</span></div>
+    </div>
+    <button class="btn green lg" id="f_start">▶️ بدء اليوم</button>
+    <button class="btn ghost" id="f_cancel" style="margin-top:10px">إلغاء</button>
+  `);
+  $('#f_cancel').onclick = closeSheet;
+  $('#f_start').onclick = ()=>{
+    const w=readNum('f_wallet'), d=readNum('f_drawer');
+    if(w===null || d===null){ toast('أدخل أرصدة صحيحة (غير سالبة)','red'); return; }
+    const sh = { id:uid(), status:'open', opened_at:new Date().toISOString(), closed_at:null,
+                 wallet_open:w, drawer_open:d, wallet_actual:null, drawer_actual:null,
+                 closing_result:null, day_profit:null, created_at:new Date().toISOString() };
+    DB.shifts.push(sh); saveLocal(); cloudUpsert('shifts', sh);
+    closeSheet(); renderAll(); toast('تم فتح اليوم ✅','green');
+  };
+}
+
+/* ---- نافذة عملية (سحب/إيداع) ---- */
+function txSheet(type){
+  const sh = currentShift();
+  if(!sh){ toast('افتح يوم أولًا','red'); return; }
+  const dep = type==='deposit';
+  const rate = dep ? DEPOSIT_RATE : WITHDRAW_RATE;
+  openSheet(`
+    <h3>${dep?'تسجيل إيداع':'تسجيل سحب'}</h3>
+    <div class="sub">${dep?'العمولة تُحسب تلقائيًا 1% (قابلة للتعديل).':'العمولة تُحسب تلقائيًا 1.5% (قابلة للتعديل).'}</div>
+    <div class="field">
+      <label>${dep?'مبلغ الإيداع':'مبلغ السحب'}</label>
+      <div class="inp"><input id="t_amount" type="text" inputmode="decimal" placeholder="0.00" /><span class="unit">ج.م</span></div>
+    </div>
+    <div class="field">
+      <label>العمولة</label>
+      <div class="inp"><input id="t_comm" type="text" inputmode="decimal" placeholder="0.00" /><span class="unit">ج.م</span></div>
+      <div class="hint">تُحسب تلقائيًا عند كتابة المبلغ — يمكنك تعديلها يدويًا.</div>
+    </div>
+    <button class="btn ${dep?'green':'red'} lg" id="t_save">💾 حفظ العملية</button>
+    <button class="btn ghost" id="t_cancel" style="margin-top:10px">إلغاء</button>
+  `);
+  // حساب العمولة تلقائيًا عند تغيير المبلغ
+  $('#t_amount').oninput = ()=>{
+    const a = parseFloat(toLatinNum($('#t_amount').value));
+    if(!isNaN(a) && a>=0) $('#t_comm').value = round2(a*rate);
+  };
+  $('#t_cancel').onclick = closeSheet;
+  $('#t_save').onclick = ()=>{
+    const a=readNum('t_amount'); let c=readNum('t_comm');
+    if(a===null || a===0){ toast('أدخل مبلغًا صحيحًا','red'); return; }
+    if(c===null) c=0;
+    const tx = { id:uid(), shift_id:sh.id, type, amount:a, commission:c, created_at:new Date().toISOString() };
+    DB.transactions.push(tx); saveLocal(); cloudUpsert('transactions', tx);
+    closeSheet(); renderAll(); toast((dep?'تم تسجيل الإيداع':'تم تسجيل السحب')+' ✅','green');
+  };
+}
+
+/* ---- تأكيد حذف عملية ---- */
+function confirmDeleteTx(id){
+  const t = DB.transactions.find(x=>x.id===id); if(!t) return;
+  openSheet(`
+    <h3>حذف العملية؟</h3>
+    <div class="sub">${t.type==='deposit'?'إيداع':'سحب'} بقيمة ${money(t.amount)} — لا يمكن التراجع.</div>
+    <button class="btn red lg" id="d_yes">نعم، احذف</button>
+    <button class="btn ghost" id="d_no" style="margin-top:10px">إلغاء</button>
+  `);
+  $('#d_no').onclick = closeSheet;
+  $('#d_yes').onclick = ()=>{
+    DB.transactions = DB.transactions.filter(x=>x.id!==id);
+    saveLocal(); cloudDelete('transactions', id);
+    closeSheet(); renderAll(); toast('تم حذف العملية','red');
+  };
+}
+
+/* ---- نافذة قفل اليوم (التقفيل) ---- */
+function closeShiftSheet(){
+  const sh = currentShift();
+  if(!sh){ toast('لا يوجد يوم مفتوح','red'); return; }
+  const st = shiftStats(sh.id);
+  openSheet(`
+    <h3>قفل اليوم</h3>
+    <div class="sub">أدخل الأرصدة الفعلية لحساب فرق التقفيل.</div>
+    <div class="field">
+      <label>الرصيد الفعلي للمحفظة</label>
+      <div class="inp"><input id="c_wallet" type="text" inputmode="decimal" placeholder="0.00" /><span class="unit">ج.م</span></div>
+    </div>
+    <div class="field">
+      <label>الرصيد الفعلي للسيولة</label>
+      <div class="inp"><input id="c_drawer" type="text" inputmode="decimal" placeholder="0.00" /><span class="unit">ج.م</span></div>
+    </div>
+    <div class="calc">
+      <div class="kv"><span class="kk">إجمالي العمولات المسجلة</span><span class="vv num">${money(st.totalComm)}</span></div>
+    </div>
+    <button class="btn blue lg" id="c_calc">🧮 حساب التقفيل</button>
+    <button class="btn ghost" id="c_cancel" style="margin-top:10px">إلغاء</button>
+    <div id="c_result"></div>
+  `);
+  $('#c_cancel').onclick = closeSheet;
+  $('#c_calc').onclick = ()=>{
+    const wa=readNum('c_wallet'), da=readNum('c_drawer');
+    if(wa===null || da===null){ toast('أدخل أرصدة صحيحة','red'); return; }
+
+    // الحسابات حسب المطلوب
+    const walletDiff = round2(wa - sh.wallet_open);
+    const drawerDiff = round2(da - sh.drawer_open);
+    const netDiff    = round2(walletDiff + drawerDiff);
+    const finalDiff  = round2(netDiff - st.totalComm);   // فرق التقفيل النهائي
+
+    let cls='ok', txt='تم التقفيل بنجاح ولا توجد فروقات ✅', val='';
+    if(finalDiff>0){ cls='up'; txt='يوجد زيادة بقيمة'; val=money(finalDiff); }
+    else if(finalDiff<0){ cls='down'; txt='يوجد عجز بقيمة'; val=money(Math.abs(finalDiff)); }
+
+    $('#c_result').innerHTML = `
+      <div class="calc">
+        <div class="kv"><span class="kk">فرق المحفظة</span><span class="vv num">${money(walletDiff)}</span></div>
+        <div class="kv"><span class="kk">فرق السيولة</span><span class="vv num">${money(drawerDiff)}</span></div>
+        <div class="kv"><span class="kk">صافي الفرق الكلي</span><span class="vv num">${money(netDiff)}</span></div>
+        <div class="kv"><span class="kk">− إجمالي العمولات</span><span class="vv num">${money(st.totalComm)}</span></div>
+      </div>
+      <div class="result-box ${cls}">
+        <div class="rt">${txt}</div>
+        ${val?`<div class="rv num">${val}</div>`:''}
+      </div>
+      ${finalDiff!==0?`<button class="btn dark" id="c_carry">📌 ترحيل الفرق (حتى لا يؤثر على الأيام التالية)</button>`:''}
+      <button class="btn ${cls==='down'?'red':'green'} lg" id="c_confirm" style="margin-top:10px">🔒 تأكيد قفل اليوم</button>
+    `;
+
+    // ترحيل الفرق كسجل مستقل
+    if(finalDiff!==0){
+      $('#c_carry').onclick = ()=>{
+        const diff = { id:uid(), shift_id:sh.id, type: finalDiff>0?'surplus':'deficit',
+                       value: round2(Math.abs(finalDiff)), note:'ترحيل فرق تقفيل', created_at:new Date().toISOString() };
+        DB.differences.push(diff); saveLocal(); cloudUpsert('differences', diff);
+        $('#c_carry').disabled = true; $('#c_carry').textContent = '✓ تم ترحيل الفرق';
+        toast('تم ترحيل الفرق','green');
+      };
+    }
+
+    // تأكيد الإغلاق النهائي
+    $('#c_confirm').onclick = ()=>{
+      sh.status='closed';
+      sh.closed_at=new Date().toISOString();
+      sh.wallet_actual=wa; sh.drawer_actual=da;
+      sh.closing_result=finalDiff;
+      sh.day_profit=st.totalComm;        // ربح اليوم = إجمالي العمولات
+      saveLocal(); cloudUpsert('shifts', sh);
+      closeSheet(); renderAll();
+      toast('تم قفل اليوم · ربح اليوم '+money(st.totalComm),'green');
+    };
+  };
+}
+
+/* ---- نافذة سحب أرباح ---- */
+function withdrawProfitSheet(){
+  const acc = accumulatedProfit();
+  openSheet(`
+    <h3>سحب أرباح</h3>
+    <div class="sub">الرصيد المتاح من الأرباح: <b class="num">${money(acc)}</b></div>
+    <div class="field">
+      <label>قيمة المبلغ المسحوب</label>
+      <div class="inp"><input id="p_amount" type="text" inputmode="decimal" placeholder="0.00" /><span class="unit">ج.م</span></div>
+    </div>
+    <div class="field">
+      <label>ملاحظة (اختياري)</label>
+      <textarea id="p_note" rows="2" placeholder="سبب السحب…"></textarea>
+    </div>
+    <button class="btn blue lg" id="p_save">💸 تأكيد السحب</button>
+    <button class="btn ghost" id="p_cancel" style="margin-top:10px">إلغاء</button>
+  `);
+  $('#p_cancel').onclick = closeSheet;
+  $('#p_save').onclick = ()=>{
+    const a=readNum('p_amount');
+    if(a===null || a===0){ toast('أدخل مبلغًا صحيحًا','red'); return; }
+    if(a>acc){ toast('المبلغ أكبر من الأرباح المتاحة','red'); return; }
+    const p = { id:uid(), amount:a, note:($('#p_note').value||'').trim(), created_at:new Date().toISOString() };
+    DB.profit_withdrawals.push(p); saveLocal(); cloudUpsert('profit_withdrawals', p);
+    closeSheet(); renderProfit(); toast('تم سحب الأرباح ✅','green');
+  };
+}
+
+/* ---- نافذة الإعدادات ---- */
+function settingsSheet(){
+  const connTxt = cloudReady ? (navigator.onLine?'متصل بالسحابة (Supabase)':'غير متصل — يعمل محليًا') : 'وضع محلي — لم يتم ربط Supabase';
+  const q = getQueue().length;
+  openSheet(`
+    <h3>الإعدادات</h3>
+    <div class="sub">${connTxt}${q?` · ${q} عملية بانتظار المزامنة`:''}</div>
+    ${!cloudReady?`<div class="banner">⚠️ لم تُضبط بيانات Supabase. التطبيق يعمل ويحفظ محليًا. لتفعيل المزامنة، عدّل SUPABASE_URL و SUPABASE_ANON_KEY أعلى ملف index.html.</div>`:''}
+    <button class="btn blue" id="s_sync" ${!cloudReady?'disabled':''}>🔄 مزامنة الآن</button>
+    <button class="btn dark" id="s_test" style="margin-top:10px" ${!cloudReady?'disabled':''}>🔌 اختبار الاتصال بالسحابة</button>
+    <div id="diagResult"></div>
+    <button class="btn ghost" id="s_demo" style="margin-top:10px">🧪 تحميل بيانات تجريبية</button>
+    <button class="btn red" id="s_clear" style="margin-top:10px">🗑 مسح كل البيانات</button>
+    <button class="btn ghost" id="s_close" style="margin-top:10px">إغلاق</button>
+  `);
+  $('#s_close').onclick = closeSheet;
+  $('#s_sync').onclick = async ()=>{ await fullSync(); toast('تمت المزامنة','green'); };
+  $('#s_test').onclick = diagnoseCloud;
+  if(lastCloudError){ $('#diagResult').innerHTML = `<div class="result-box down"><div class="rt">آخر خطأ سحابي</div><div style="font-size:12px;margin-top:6px;direction:ltr;text-align:left">${lastCloudError}</div></div>`; }
+  $('#s_demo').onclick = ()=>{ closeSheet(); seedDemo(); };
+  $('#s_clear').onclick = ()=>{
+    openSheet(`
+      <h3>مسح كل البيانات؟</h3>
+      <div class="sub">سيتم حذف كل الأيام والعمليات والأرباح محليًا. لا يمكن التراجع.</div>
+      <button class="btn red lg" id="cl_yes">نعم، امسح الكل</button>
+      <button class="btn ghost" id="cl_no" style="margin-top:10px">إلغاء</button>
+    `);
+    $('#cl_no').onclick = closeSheet;
+    $('#cl_yes').onclick = ()=>{
+      DB = { shifts:[], transactions:[], profit_withdrawals:[], differences:[] };
+      saveLocal(); setQueue([]); closeSheet(); renderAll(); toast('تم مسح البيانات','red');
+    };
+  };
+}
+
+/* =========================================================================
+   8) التنبيه + التنقل
+   ========================================================================= */
+let toastTimer=null;
+function toast(msg, type=''){
+  const t=$('#toast'); t.textContent=msg; t.className='toast '+type+' show';
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+function updateConn(state){
+  const el=$('#connStatus');
+  const map={
+    online:['#15a657','متصل'], syncing:['#f59e0b','مزامنة…'],
+    offline:['#9ca3af','غير متصل'], local:['#9ca3af','محلي']
+  };
+  const [c,txt]=map[state]||map.local;
+  el.innerHTML = `<span class="dot" style="background:${c}"></span> ${txt}`;
+}
+
+// التنقل بين الصفحات
+$$('.tab').forEach(tab=>{
+  tab.onclick=()=>{
+    $$('.tab').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    $$('.page').forEach(p=>p.classList.remove('active'));
+    $('#page-'+tab.dataset.tab).classList.add('active');
+    const sc = $('#scroller'); if(sc) sc.scrollTo({top:0, behavior:'smooth'});
+  };
+});
+
+// ربط الأزرار الرئيسية
+$('#btnWithdraw').onclick = ()=> txSheet('withdraw');
+$('#btnDeposit').onclick  = ()=> txSheet('deposit');
+$('#btnWithdrawProfit').onclick = withdrawProfitSheet;
+$('#btnSettings').onclick = settingsSheet;
+
+// زر التحديث في الشريط العلوي: يزامن مع السحابة يدويًا
+$('#btnRefresh').onclick = async ()=>{
+  const b = $('#btnRefresh'); b.classList.add('spin');
+  await fullSync();
+  setTimeout(()=>b.classList.remove('spin'), 600);
+  toast(cloudReady ? 'تم التحديث' : 'وضع محلي', cloudReady?'green':'');
+};
+
+// مزامنة تلقائية: عند رجوع التطبيق للواجهة + كل 25 ثانية
+document.addEventListener('visibilitychange', ()=>{
+  if(document.visibilityState==='visible' && cloudReady && navigator.onLine) fullSync();
+});
+setInterval(()=>{
+  if(cloudReady && navigator.onLine && document.visibilityState==='visible' && !$('#overlay').classList.contains('show')){
+    fullSync();
+  }
+}, 25000);
+$('#txSearch').oninput = renderTxList;
+
+// تحديد كل النص عند الدخول للخانة (يسهّل تعديل الرقم)
+document.addEventListener('focusin', e=>{
+  const el = e.target;
+  if(el.matches && el.matches('input[inputmode="decimal"]')){
+    setTimeout(()=>{ try{ el.select(); }catch(_){} }, 0);
+  }
+});
+// تحويل الأرقام العربية لإنجليزية لحظيًا أثناء الكتابة
+document.addEventListener('input', e=>{
+  const el = e.target;
+  if(el.matches && el.matches('input[inputmode="decimal"]')){
+    const fixed = toLatinNum(el.value);
+    if(fixed !== el.value) el.value = fixed;
+  }
+});
+
+/* =========================================================================
+   9) بيانات تجريبية للاختبار
+   ========================================================================= */
+function seedDemo(){
+  const t = (h,m)=>{ const d=new Date(); d.setDate(d.getDate()-1); d.setHours(h,m,0,0); return d.toISOString(); };
+  const s1 = { id:uid(), status:'closed', opened_at:t(9,0), closed_at:t(21,0),
+               wallet_open:5000, drawer_open:3000, wallet_actual:5320, drawer_actual:2885,
+               closing_result:0, day_profit:205, created_at:t(9,0) };
+  // عمليات اليوم التجريبية
+  const txs = [
+    { id:uid(), shift_id:s1.id, type:'withdraw', amount:2000, commission:30, created_at:t(10,15) },
+    { id:uid(), shift_id:s1.id, type:'deposit',  amount:5000, commission:50, created_at:t(12,40) },
+    { id:uid(), shift_id:s1.id, type:'withdraw', amount:1000, commission:15, created_at:t(15,5)  },
+    { id:uid(), shift_id:s1.id, type:'deposit',  amount:11000,commission:110,created_at:t(18,30) },
+  ];
+  // إعادة ضبط day_profit ليساوي مجموع العمولات الفعلية
+  s1.day_profit = txs.reduce((a,x)=>a+x.commission,0);  // 205
+  const pw = { id:uid(), amount:100, note:'سحب جزء من الأرباح', created_at:t(21,30) };
+
+  DB.shifts.push(s1);
+  DB.transactions.push(...txs);
+  DB.profit_withdrawals.push(pw);
+  saveLocal();
+  if(cloudReady){ cloudUpsert('shifts',s1); txs.forEach(x=>cloudUpsert('transactions',x)); cloudUpsert('profit_withdrawals',pw); }
+  renderAll(); toast('تم تحميل بيانات تجريبية 🧪','green');
+}
+
+/* =========================================================================
+   10) التهيئة + PWA + مراقبة الاتصال
+   ========================================================================= */
+async function boot(){
+  loadLocal();
+  initSupabase();
+  updateConn(cloudReady ? (navigator.onLine?'online':'offline') : 'local');
+  renderAll();
+  // مزامنة أولية مع السحابة (إن وُجدت)
+  if(cloudReady && navigator.onLine){ fullSync(); }
+}
+
+/* ---- شاشة القفل بالرقم السري ---- */
+const LS_UNLOCK = 'vfcash_unlocked';
+let pinEntry = '';
+
+function buildKeypad(){
+  const keys = ['1','2','3','4','5','6','7','8','9','blank','0','back'];
+  $('#keypad').innerHTML = keys.map(k=>{
+    if(k==='blank') return `<div class="key blank"></div>`;
+    if(k==='back')  return `<button class="key act" data-k="back">⌫</button>`;
+    return `<button class="key" data-k="${k}">${k}</button>`;
+  }).join('');
+  $$('#keypad .key').forEach(b=> b.onclick = ()=> pinPress(b.dataset.k));
+  renderDots();
+}
+function renderDots(){
+  const n = APP_PIN.length;
+  $('#lockDots').innerHTML = Array.from({length:n}, (_,i)=>
+    `<div class="d ${i<pinEntry.length?'on':''}"></div>`).join('');
+}
+function pinPress(k){
+  if(k==='back'){ pinEntry = pinEntry.slice(0,-1); renderDots(); return; }
+  if(pinEntry.length >= APP_PIN.length) return;
+  pinEntry += k; renderDots();
+  if(pinEntry.length === APP_PIN.length){
+    setTimeout(()=>{
+      if(pinEntry === APP_PIN){ unlockApp(); }
+      else{
+        const d=$('#lockDots'); d.classList.add('err');
+        $('#lockSub').textContent = 'الرقم غير صحيح، حاول تاني';
+        setTimeout(()=>{ pinEntry=''; renderDots(); d.classList.remove('err'); }, 450);
+      }
+    }, 120);
+  }
+}
+function unlockApp(){
+  sessionStorage.setItem(LS_UNLOCK,'1');
+  $('#lockScreen').classList.remove('show');
+}
+function lockGate(){
+  // يطلب الرقم مرة واحدة عند كل فتح للتطبيق
+  if(sessionStorage.getItem(LS_UNLOCK)==='1') return;
+  buildKeypad();
+  $('#lockScreen').classList.add('show');
+}
+
+lockGate();   // يعرض شاشة القفل (والتطبيق يجهّز خلفها)
+
+// مراقبة عودة/انقطاع الاتصال
+window.addEventListener('online',  ()=>{ updateConn(cloudReady?'online':'local'); fullSync(); });
+window.addEventListener('offline', ()=>{ updateConn('offline'); });
+
+// تسجيل Service Worker + إشعار التحديث
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('service-worker.js').then(reg=>{
+      // اكتشاف تحديث جديد
+      reg.addEventListener('updatefound', ()=>{
+        const sw = reg.installing;
+        sw && sw.addEventListener('statechange', ()=>{
+          if(sw.state==='installed' && navigator.serviceWorker.controller){
+            $('#updateBar').classList.add('show');
+            $('#btnUpdate').onclick = ()=>{ sw.postMessage('SKIP_WAITING'); };
+          }
+        });
+      });
+    }).catch(()=>{});
+    // إعادة تحميل الصفحة بعد تفعيل الإصدار الجديد
+    let refreshing=false;
+    navigator.serviceWorker.addEventListener('controllerchange', ()=>{
+      if(refreshing) return; refreshing=true; location.reload();
+    });
+  });
+}
+
+boot();
+</script>
+</body>
+</html>
