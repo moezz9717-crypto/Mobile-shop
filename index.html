@@ -3383,7 +3383,7 @@ async function vfChatSend(){
   VFCHAT.loading=true; vfChatRender();
   try{
     const systemPrompt = 'أنت مساعد ذكي متخصص في فودافون كاش (تطبيق تحويل أموال وشحن محافظ).\nأجب على الأسئلة المتعلقة بـ:\n- عمليات السحب والإيداع\n- العمولات (رسوم التحويل)\n- كيفية استخدام الخدمة\n- المشاكل الشائعة والحلول\n- إحصائيات وتحليلات العمليات\n\nالسؤال: ' + q + '\n\nإذا كان السؤال غير متعلق بفودافون كاش، قل: "سؤالك مش متعلق بفودافون كاش، استفسر عن حاجة تانية ليها علاقة بالخدمة."\nأجب بشكل مختصر وواضح بالعربية.';
-    const res=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=AQ.Ab8RN6KOJruzjuCwYt393WWrGrlygNiwBVbik7uuqlzGMY2Vjg',{
+    const res=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=YOUR_GEMINI_API_KEY_HERE',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({contents:[{parts:[{text:systemPrompt}]}]})
